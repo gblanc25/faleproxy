@@ -4,6 +4,9 @@ const express = require('express');
 const path = require('path');
 const { sampleHtmlWithYale } = require('./test-utils');
 
+// Test configuration
+const TEST_PORT = process.env.TEST_PORT || 3099;
+
 // Import app but don't let it listen on a port (we'll use supertest for that)
 // Create a test app with the same route handlers
 const testApp = express();
