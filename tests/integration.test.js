@@ -73,7 +73,7 @@ describe('Integration Tests', () => {
     expect(hasYaleUrl).toBe(true);
     
     // Verify link text is changed
-    expect($('a').first().text()).toBe('About Fale');
+    expect($('a').first().text()).toBe('About Fale'); 
   }, 10000); // Increase timeout for this test
 
   test('Should handle invalid URLs', async () => {
