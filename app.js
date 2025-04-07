@@ -4,7 +4,7 @@ const cheerio = require('cheerio');
 const path = require('path');
 
 const app = express();
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 
 // Middleware to parse request bodies
 app.use(express.json());
@@ -91,5 +91,6 @@ app.post('/fetch', async (req, res) => {
 
 // Start the server
 app.listen(PORT, () => {
+  console.log('listening');
   console.log(`Faleproxy server running at http://localhost:${PORT}`);
 });
