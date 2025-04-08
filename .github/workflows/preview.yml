@@ -1,0 +1,37 @@
+name: Preview Deployment
+
+on:
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install Vercel CLI
+      run: npm install --global vercel@latest
+      
+    - name: Pull Vercel Environment Information
+      run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+      
+    - name: Build Project Artifacts
+      run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
+      
+    - name: Deploy to Vercel Preview
+      id: deploy
+      run: echo "url=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})" >> $GITHUB_OUTPUT
+
+    - name: Comment Preview URL
+      uses: actions/github-script@v6
+      with:
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.name,
+            body: `✨ Preview deployment is ready! You can view it at: ${process.env.DEPLOY_URL}`
+          })
+      env:
+        DEPLOY_URL: ${{ steps.deploy.outputs.url }}
