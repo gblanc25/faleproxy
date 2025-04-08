@@ -10,7 +10,6 @@ const TEST_URL = 'http://test-yale-site.example';
 describe('Integration Tests', () => {
   beforeAll(() => {
     nock.cleanAll();
-    // Enable debug mode
     nock.disableNetConnect();
     nock.enableNetConnect('127.0.0.1');
     nock.enableNetConnect('localhost');
@@ -26,15 +25,12 @@ describe('Integration Tests', () => {
   });
 
   test('Should replace Yale with Fale in fetched content', async () => {
-    // Setup mock for our test URL
     console.log('Setting up mock for test URL');
     const mock = nock(TEST_URL)
-      .log(console.log)
       .get('/')
       .reply(200, sampleHtmlWithYale);
 
     try {
-      // Make a request to our proxy app
       console.log('Making request to proxy');
       const response = await axios.post(`http://localhost:${TEST_PORT}/fetch`, {
         url: TEST_URL
@@ -49,14 +45,12 @@ describe('Integration Tests', () => {
       expect(response.status).toBe(200);
       expect(response.data.success).toBe(true);
       
-      // Verify Yale has been replaced with Fale in text
       const $ = cheerio.load(response.data.content);
       console.log('Parsed content title:', $('title').text());
       expect($('title').text()).toBe('Fale University Test Page');
       expect($('h1').text()).toBe('Welcome to Fale University');
       expect($('p').first().text()).toContain('Fale University is a private');
       
-      // Verify URLs remain unchanged
       const links = $('a');
       let hasYaleUrl = false;
       links.each((i, link) => {
@@ -66,8 +60,6 @@ describe('Integration Tests', () => {
         }
       });
       expect(hasYaleUrl).toBe(true);
-      
-      // Verify link text is changed
       expect($('a').first().text()).toBe('About Fale'); 
     } catch (error) {
       console.error('Test error:', error.message);
@@ -76,7 +68,6 @@ describe('Integration Tests', () => {
       }
       throw error;
     } finally {
-      // Check if our mock was used
       console.log('Pending mocks:', nock.pendingMocks());
       mock.done();
     }
