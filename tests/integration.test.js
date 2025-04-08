@@ -1,42 +1,19 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
-const { exec } = require('child_process');
-const { promisify } = require('util');
-const execAsync = promisify(exec);
-const { sampleHtmlWithYale } = require('./test-utils');
 const nock = require('nock');
+const { sampleHtmlWithYale } = require('./test-utils');
 
 // Set a different port for testing to avoid conflict with the main app
 const TEST_PORT = 3099;
-let server;
 
 describe('Integration Tests', () => {
-  // Modify the app to use a test port
   beforeAll(async () => {
     // Allow localhost connections but block others
     nock.enableNetConnect('127.0.0.1');
     nock.enableNetConnect('localhost');
-    
-    // Create a temporary test app file
-    await execAsync('cp app.js app.test.js');
-    await execAsync(`sed 's/const PORT = 3001/const PORT = ${TEST_PORT}/' app.test.js`);
-    
-    // Start the test server
-    server = require('child_process').spawn('node', ['app.test.js'], {
-      detached: true,
-      stdio: 'ignore'
-    });
-    
-    // Give the server time to start
-    await new Promise(resolve => setTimeout(resolve, 2000));
-  }, 10000); // Increase timeout for server startup
+  });
 
-  afterAll(async () => {
-    // Kill the test server and clean up
-    if (server && server.pid) {
-      process.kill(-server.pid);
-    }
-    await execAsync('rm app.test.js');
+  afterAll(() => {
     nock.cleanAll();
     nock.enableNetConnect();
   });
@@ -84,9 +61,6 @@ describe('Integration Tests', () => {
       // Should not reach here
       expect(true).toBe(false);
     } catch (error) {
-      if (error.code === 'ECONNREFUSED') {
-        throw new Error('Server is not running');
-      }
       expect(error.response?.status || 500).toBe(500);
     }
   });
@@ -97,9 +71,6 @@ describe('Integration Tests', () => {
       // Should not reach here
       expect(true).toBe(false);
     } catch (error) {
-      if (error.code === 'ECONNREFUSED') {
-        throw new Error('Server is not running');
-      }
       expect(error.response?.status || 400).toBe(400);
       expect(error.response?.data?.error).toBe('URL is required');
     }
