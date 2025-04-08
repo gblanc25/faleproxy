@@ -9,8 +9,28 @@ on:
 jobs:
   preview:
     runs-on: ubuntu-latest
+    environment: preview
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+    
+    - name: Use Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18.x'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm ci
+    
+    - name: Start server
+      run: |
+        node app.js &
+        sleep 2
+      env:
+        PORT: 3099
+    
+    - name: Run tests
+      run: npm run test:unix
     
     - name: Install Vercel CLI
       run: npm install --global vercel@latest
@@ -31,9 +51,9 @@ jobs:
       with:
         script: |
           github.rest.issues.createComment({
+            owner: 'gblanc25',
+            repo: 'faleproxy',
             issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.name,
             body: `✨ Preview deployment is ready! You can view it at: ${process.env.DEPLOY_URL}`
           })
       env:
