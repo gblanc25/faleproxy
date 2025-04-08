@@ -7,10 +7,14 @@ const { sampleHtmlWithYale } = require('./test-utils');
 const TEST_PORT = 3099;
 
 describe('Integration Tests', () => {
-  beforeAll(async () => {
+  beforeAll(() => {
     // Allow localhost connections but block others
     nock.enableNetConnect('127.0.0.1');
     nock.enableNetConnect('localhost');
+  });
+
+  beforeEach(() => {
+    nock.cleanAll();
   });
 
   afterAll(() => {
@@ -20,7 +24,8 @@ describe('Integration Tests', () => {
 
   test('Should replace Yale with Fale in fetched content', async () => {
     // Setup mock for example.com
-    nock('https://example.com')
+    const mock = nock('https://example.com')
+      .persist()
       .get('/')
       .reply(200, sampleHtmlWithYale);
     
@@ -51,6 +56,9 @@ describe('Integration Tests', () => {
     
     // Verify link text is changed
     expect($('a').first().text()).toBe('About Fale'); 
+
+    // Clean up the mock
+    mock.done();
   }, 10000); // Increase timeout for this test
 
   test('Should handle invalid URLs', async () => { 
