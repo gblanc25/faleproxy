@@ -5,11 +5,12 @@ const { sampleHtmlWithYale } = require('./test-utils');
 
 // Set a different port for testing to avoid conflict with the main app
 const TEST_PORT = 3099;
-const TEST_URL = 'http://test-yale-site.example';
+const TEST_URL = 'https://yale.test.edu';
 
 describe('Integration Tests', () => {
   beforeAll(() => {
     nock.cleanAll();
+    // We need to allow real connections to localhost for our proxy server
     nock.disableNetConnect();
     nock.enableNetConnect('127.0.0.1');
     nock.enableNetConnect('localhost');
@@ -26,9 +27,11 @@ describe('Integration Tests', () => {
 
   test('Should replace Yale with Fale in fetched content', async () => {
     console.log('Setting up mock for test URL');
-    const mock = nock(TEST_URL)
+    const mock = nock('https://yale.test.edu')
       .get('/')
-      .reply(200, sampleHtmlWithYale);
+      .reply(200, sampleHtmlWithYale, {
+        'Content-Type': 'text/html'
+      });
 
     try {
       console.log('Making request to proxy');
