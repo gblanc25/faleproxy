@@ -1,6 +1,8 @@
 name: Preview Deployment
 
 on:
+  push:
+    branches-ignore: [ main, master ]
   pull_request:
     branches: [ main, master ]
 
@@ -24,6 +26,7 @@ jobs:
       run: echo "url=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})" >> $GITHUB_OUTPUT
 
     - name: Comment Preview URL
+      if: github.event_name == 'pull_request'
       uses: actions/github-script@v6
       with:
         script: |
@@ -35,3 +38,8 @@ jobs:
           })
       env:
         DEPLOY_URL: ${{ steps.deploy.outputs.url }}
+
+    - name: Output Preview URL
+      if: github.event_name == 'push'
+      run: |
+        echo "Preview deployment is ready at: ${{ steps.deploy.outputs.url }}"
