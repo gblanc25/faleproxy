@@ -23,7 +23,7 @@ jobs:
       
     - name: Run tests
       id: run-tests
-      run: npm run test:ci
+      run: npm run test:unix
       
     - name: Upload coverage report
       if: always()
