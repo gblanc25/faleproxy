@@ -46,6 +46,7 @@ jobs:
       (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') &&
       success()
     runs-on: ubuntu-latest
+    environment: production
     steps:
     - uses: actions/checkout@v4
     
