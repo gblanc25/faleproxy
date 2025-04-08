@@ -5,10 +5,13 @@ const { sampleHtmlWithYale } = require('./test-utils');
 
 // Set a different port for testing to avoid conflict with the main app
 const TEST_PORT = 3099;
+const TEST_URL = 'http://test-yale-site.example';
 
 describe('Integration Tests', () => {
   beforeAll(() => {
-    // Allow localhost connections but block others
+    nock.cleanAll();
+    // Enable debug mode
+    nock.disableNetConnect();
     nock.enableNetConnect('127.0.0.1');
     nock.enableNetConnect('localhost');
   });
@@ -23,43 +26,61 @@ describe('Integration Tests', () => {
   });
 
   test('Should replace Yale with Fale in fetched content', async () => {
-    // Setup mock for example.com
-    const mock = nock('https://example.com')
-      .persist()
+    // Setup mock for our test URL
+    console.log('Setting up mock for test URL');
+    const mock = nock(TEST_URL)
+      .log(console.log)
       .get('/')
       .reply(200, sampleHtmlWithYale);
-    
-    // Make a request to our proxy app
-    const response = await axios.post(`http://localhost:${TEST_PORT}/fetch`, {
-      url: 'https://example.com/'
-    });
-    
-    expect(response.status).toBe(200);
-    expect(response.data.success).toBe(true);
-    
-    // Verify Yale has been replaced with Fale in text
-    const $ = cheerio.load(response.data.content);
-    expect($('title').text()).toBe('Fale University Test Page');
-    expect($('h1').text()).toBe('Welcome to Fale University');
-    expect($('p').first().text()).toContain('Fale University is a private');
-    
-    // Verify URLs remain unchanged
-    const links = $('a');
-    let hasYaleUrl = false;
-    links.each((i, link) => {
-      const href = $(link).attr('href');
-      if (href && href.includes('yale.edu')) {
-        hasYaleUrl = true;
-      }
-    });
-    expect(hasYaleUrl).toBe(true);
-    
-    // Verify link text is changed
-    expect($('a').first().text()).toBe('About Fale'); 
 
-    // Clean up the mock
-    mock.done();
-  }, 10000); // Increase timeout for this test
+    try {
+      // Make a request to our proxy app
+      console.log('Making request to proxy');
+      const response = await axios.post(`http://localhost:${TEST_PORT}/fetch`, {
+        url: TEST_URL
+      });
+      
+      console.log('Response received:', {
+        status: response.status,
+        success: response.data.success,
+        contentPreview: response.data.content.substring(0, 100)
+      });
+
+      expect(response.status).toBe(200);
+      expect(response.data.success).toBe(true);
+      
+      // Verify Yale has been replaced with Fale in text
+      const $ = cheerio.load(response.data.content);
+      console.log('Parsed content title:', $('title').text());
+      expect($('title').text()).toBe('Fale University Test Page');
+      expect($('h1').text()).toBe('Welcome to Fale University');
+      expect($('p').first().text()).toContain('Fale University is a private');
+      
+      // Verify URLs remain unchanged
+      const links = $('a');
+      let hasYaleUrl = false;
+      links.each((i, link) => {
+        const href = $(link).attr('href');
+        if (href && href.includes('yale.edu')) {
+          hasYaleUrl = true;
+        }
+      });
+      expect(hasYaleUrl).toBe(true);
+      
+      // Verify link text is changed
+      expect($('a').first().text()).toBe('About Fale'); 
+    } catch (error) {
+      console.error('Test error:', error.message);
+      if (error.response) {
+        console.error('Response data:', error.response.data);
+      }
+      throw error;
+    } finally {
+      // Check if our mock was used
+      console.log('Pending mocks:', nock.pendingMocks());
+      mock.done();
+    }
+  }, 10000);
 
   test('Should handle invalid URLs', async () => { 
     try {
