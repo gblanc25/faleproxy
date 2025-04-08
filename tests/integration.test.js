@@ -1,38 +1,41 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
-const nock = require('nock');
+const express = require('express');
 const { sampleHtmlWithYale } = require('./test-utils');
 
-// Set a different port for testing to avoid conflict with the main app
+// Set different ports for testing to avoid conflicts
 const TEST_PORT = 3099;
-const TEST_URL = 'https://yale.test.edu';
+const TEST_SERVER_PORT = 3098;
+const TEST_URL = `http://localhost:${TEST_SERVER_PORT}`;
 
 describe('Integration Tests', () => {
-  beforeAll(() => {
-    nock.cleanAll();
-    // We need to allow real connections to localhost for our proxy server
-    nock.disableNetConnect();
-    nock.enableNetConnect('127.0.0.1');
-    nock.enableNetConnect('localhost');
+  let testServer;
+
+  beforeAll(async () => {
+    // Create a simple test server that returns Yale content
+    const app = express();
+    app.get('/', (req, res) => {
+      res.setHeader('Content-Type', 'text/html');
+      res.send(sampleHtmlWithYale);
+    });
+    
+    // Start test server
+    await new Promise(resolve => {
+      testServer = app.listen(TEST_SERVER_PORT, () => {
+        console.log(`Test server running at ${TEST_URL}`);
+        resolve();
+      });
+    });
   });
 
-  beforeEach(() => {
-    nock.cleanAll();
-  });
-
-  afterAll(() => {
-    nock.cleanAll();
-    nock.enableNetConnect();
+  afterAll(async () => {
+    // Cleanup test server
+    if (testServer) {
+      await new Promise(resolve => testServer.close(resolve));
+    }
   });
 
   test('Should replace Yale with Fale in fetched content', async () => {
-    console.log('Setting up mock for test URL');
-    const mock = nock('https://yale.test.edu')
-      .get('/')
-      .reply(200, sampleHtmlWithYale, {
-        'Content-Type': 'text/html'
-      });
-
     try {
       console.log('Making request to proxy');
       const response = await axios.post(`http://localhost:${TEST_PORT}/fetch`, {
@@ -70,9 +73,6 @@ describe('Integration Tests', () => {
         console.error('Response data:', error.response.data);
       }
       throw error;
-    } finally {
-      console.log('Pending mocks:', nock.pendingMocks());
-      mock.done();
     }
   }, 10000);
 
