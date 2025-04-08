@@ -76,7 +76,7 @@ describe('Integration Tests', () => {
     expect($('a').first().text()).toBe('About Fale'); 
   }, 10000); // Increase timeout for this test
 
-  test('Should handle invalid URLs', async () => {
+  test('Should handle invalid URLs', async () => { 
     try {
       await axios.post(`http://localhost:${TEST_PORT}/fetch`, {
         url: 'not-a-valid-url'
